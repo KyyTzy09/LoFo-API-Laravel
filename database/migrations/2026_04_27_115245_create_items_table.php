@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('items', function (Blueprint $table) {
-            $table->string('id')->primary();
+            $table->string('itemId')->primary();
             $table->string('user_id');
 
             $table->string('image');
@@ -28,7 +28,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('userId')->on('users');
         });
     }
 

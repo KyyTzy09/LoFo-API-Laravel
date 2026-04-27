@@ -7,12 +7,12 @@ use Illuminate\Support\Str;
 
 class Announcement extends Model
 {
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'announcementId';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
+        'announcementId',
         'user_id',
         'item_id',
         'title',
@@ -25,8 +25,8 @@ class Announcement extends Model
     protected static function booted()
     {
         static::creating(function ($ann) {
-            if (!$ann->id) {
-                $ann->id = (string) Str::ulid();
+            if (!$ann->announcementId) {
+                $ann->announcementId = (string) Str::ulid();
             }
         });
     }

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('info')->nullable();
             $table->string('address')->nullable();
 
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('user_id')->references('userId')->on('users')->cascadeOnDelete();
         });
     }
 

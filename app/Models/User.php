@@ -7,12 +7,12 @@ use Illuminate\Support\Str;
 
 class User extends Model
 {
-    protected $primaryKey = 'id';
+    protected $primaryKey = 'userId';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
+        'userId',
         'phone_number',
         'password',
     ];
@@ -28,17 +28,16 @@ class User extends Model
 
     public function profile()
     {
-        return $this->hasOne(Profile::class, 'user_id', 'id');
+        return $this->hasOne(Profile::class, 'user_id', 'userId');
     }
 
     public function items()
     {
-        return $this->hasMany(Item::class, 'user_id', 'id');
+        return $this->hasMany(Item::class, 'user_id', 'userId');
     }
 
     public function announcements()
     {
-        return $this->hasMany(Announcement::class, 'user_id', 'id');
+        return $this->hasMany(Announcement::class, 'user_id', 'userId');
     }
-
 }
