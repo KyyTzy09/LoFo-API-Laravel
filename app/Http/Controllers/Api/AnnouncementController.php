@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,6 +15,7 @@ class AnnouncementController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
         $validated = $request->validate([
             'item_id' => 'nullable|string',
             'title' => 'required|string|max:255',
@@ -27,12 +29,25 @@ class AnnouncementController extends Controller
 
         // Use authenticated user or fallback to request input
         // Assumes typical auth flow, adjust if user_id is sent differently
-        $validated['user_id'] = Auth::id() ?? request('user_id');
+        $validated['user_id'] = $user->userId;
+
+        $pendingAnnouncement = Announcement::where('item_id', $request->item_id)
+            ->where('status', 'PENDING')
+            ->first();
+        if ($pendingAnnouncement) {
+            return response()->json([
+                'message' => 'Terdapat pengumuman yang sedang berlangsung untuk item ini',
+                'data' => $pendingAnnouncement
+            ], 409); // Conflict
+        }
 
         $announcement = Announcement::create($validated);
+        if ($request->item_id !== null) {
+            Item::where('itemId', $request->item_id)->update(['status' => 'HILANG']);
+        }
 
         return response()->json([
-            'message' => 'Announcement created successfully',
+            'message' => 'Pengumuman berhasil dibuat',
             'data' => $announcement
         ], 201);
     }
@@ -46,7 +61,29 @@ class AnnouncementController extends Controller
         $announcement = Announcement::with(['user', 'user.profile'])->findOrFail($id);
 
         return response()->json([
+            'message' => 'Pengumuman berhasil didapatkan',
             'data' => $announcement
+        ]);
+    }
+
+    public function showPending()
+    {
+        $pendingAnnouncements = Announcement::where('status', 'PENDING')->with(['user', 'user.profile'])->get();
+
+        return response()->json([
+            'message' => 'Semua pengumuman yang sedang berlangsung berhasil didapatkan',
+            'data' => $pendingAnnouncements
+        ]);
+    }
+
+    public function showByUser(Request $request)
+    {
+        $user = $request->user();
+        $announcements = Announcement::where('user_id', $user->userId)->with(['user', 'user.profile'])->get();
+
+        return response()->json([
+            'message' => 'Semua pengumuman milik pengguna berhasil didapatkan',
+            'data' => $announcements
         ]);
     }
 
@@ -67,7 +104,7 @@ class AnnouncementController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Announcement status updated successfully',
+            'message' => 'Status pengumuman berhasil diperbarui',
             'data' => $announcement
         ]);
     }
@@ -81,7 +118,7 @@ class AnnouncementController extends Controller
         $announcement->delete();
 
         return response()->json([
-            'message' => 'Announcement deleted successfully'
+            'message' => 'Pengumuman berhasil dihapus'
         ], 200);
     }
 }

@@ -39,6 +39,18 @@ class ItemController extends Controller
         ]);
     }
 
+    public function getByUserId(Request $request)
+    {
+        $user = $request->user();
+        $items = Item::where('user_id', $user->userId)->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data item berhasil diambil',
+            'data' => $items
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      * Fitur: Tambah Item baru dengan validasi

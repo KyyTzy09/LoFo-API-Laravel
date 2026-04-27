@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ItemController;
 use Illuminate\Http\Request;
@@ -10,8 +11,21 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 // Route Private (Harus bawa Token)
 Route::middleware('auth:sanctum')->group(function () {
+    // User Routes
+    Route::get('/users/items', [ItemController::class, 'getByUserId']);
+    Route::get('/users/announcements', [AnnouncementController::class, 'showByUser']);
+
+    // Auth Routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-    // Route Barang
+
+    // Route Items (CRUD)
     Route::apiResource('items', ItemController::class);
+
+    // Route Announcement (CRUD)
+    Route::post('/announcements', [AnnouncementController::class, 'store']);
+    Route::get('/announcements/pending', [AnnouncementController::class, 'showPending']);
+    Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
+    Route::patch('/announcements/{id}', [AnnouncementController::class, 'update']);
+    Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
 });
