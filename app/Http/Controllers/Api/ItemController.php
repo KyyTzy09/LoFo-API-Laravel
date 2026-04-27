@@ -79,7 +79,7 @@ class ItemController extends Controller
 
             // Simpan QR Code
             $qrFileName = 'qrcodes/' . $item->itemId . '.png';
-            Storage::disk('public')->put($qrFileName, $result->string());
+            Storage::disk('public')->put($qrFileName, $result->getString());
             $item->qr_url = 'storage/' . $qrFileName;
             $item->save();
 
@@ -226,3 +226,4 @@ class ItemController extends Controller
             ], 500);
         }
     }
+}
