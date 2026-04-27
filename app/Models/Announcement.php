@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class Item extends Model
+class Announcement extends Model
 {
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -14,20 +14,19 @@ class Item extends Model
     protected $fillable = [
         'id',
         'user_id',
-        'image',
-        'item_name',
-        'item_info',
-        'status',
-        'qr_url',
-        'last_seen_location',
-        'last_seen_at'
+        'item_id',
+        'title',
+        'description',
+        'location',
+        'lost_at',
+        'status'
     ];
 
     protected static function booted()
     {
-        static::creating(function ($Item) {
-            if (!$Item->id) {
-                $Item->id = (string) Str::ulid();
+        static::creating(function ($ann) {
+            if (!$ann->id) {
+                $ann->id = (string) Str::ulid();
             }
         });
     }
@@ -35,5 +34,10 @@ class Item extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class);
     }
 }

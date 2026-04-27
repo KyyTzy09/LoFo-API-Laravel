@@ -37,36 +37,36 @@ class ItemController extends Controller
             'image' => 'image|mimes:jpg,png,jpeg|max:2048'
         ]);
 
-    if ($userId) {
-        $data['user_id'] = $userId;
-    }
+        if ($userId) {
+            $data['user_id'] = $userId;
+        }
 
-    // upload gambar
-    if ($request->hasFile('image')) {
-        $data['image'] = $request->file('image')->store('item', 'public');
-    }
+        // upload gambar
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('item', 'public');
+        }
 
-    $item = Item::create($data);
+        $item = Item::create($data);
 
-    // generate QR (isi: URL atau ID barang)
-    $qrPath = 'qr/qr-'.$item->itemId.'.png';
+        // generate QR (isi: URL atau ID barang)
+        $qrPath = 'qr/qr-' . $item->itemId . '.png';
 
-    $result = Builder::create()
-    ->writer(new PngWriter())
-    ->data($item->itemId)
-    ->size(300)
-    ->build();
+        $result = Builder::create()
+            ->writer(new PngWriter())
+            ->data($item->itemId)
+            ->size(300)
+            ->build();
 
-    Storage::disk('public')->put($qrPath, $result->getString());
+        Storage::disk('public')->put($qrPath, $result->getString());
 
-    $item->update([
-        'qr_url' => $qrPath
-    ]);
+        $item->update([
+            'qr_url' => $qrPath
+        ]);
 
-    return response()->json([
-        'message' => 'Barang berhasil ditambahkan',
-        'data' => $item
-    ], 201);
+        return response()->json([
+            'message' => 'Barang berhasil ditambahkan',
+            'data' => $item
+        ], 201);
     }
 
     /**

@@ -11,18 +11,24 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('items', function (Blueprint $table) {
-            $table->string('itemId')->primary(); // ULID manual
+        Schema::create('items', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('user_id');
+
             $table->string('image');
             $table->string('item_name');
             $table->text('item_info')->nullable();
+
             $table->enum('status', ['TERSEDIA', 'HILANG'])->default('TERSEDIA');
+
             $table->text('qr_url')->nullable();
+
+            $table->string('last_seen_location')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
 
             $table->timestamps();
 
-            // foreign key
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 
