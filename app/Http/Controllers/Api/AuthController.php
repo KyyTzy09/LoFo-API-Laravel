@@ -16,17 +16,22 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required',
-            'phone' => 'required|email|unique:users',
-            'password' => 'required|min:8'
+            'username' => 'required',
+            'phone_number' => 'required|digits_between:10,13|unique:users',
+            'password' => 'required|min:8',
+            'address' => 'nullable|string'
         ]);
 
         if ($validator->fails()) return response()->json($validator->errors(), 422);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password)
+        ]);
+
+        $user->profile()->create([
+            'username' => $request->username,
+            'address' => $request->address
         ]);
 
         return response()->json(['message' => 'Register Berhasil', 'data' => $user], 201);
@@ -35,20 +40,33 @@ class AuthController extends Controller
     // LOGIN
     public function login(Request $request)
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['message' => 'Email atau Password salah'], 401);
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'required|digits_between:10,13',
+            'password' => 'required'
+        ]);
+        if ($validator->fails()) return response()->json($validator->errors(), 422);
+
+        $user = User::where('phone_number', $request->phone_number)->first();
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Nomor Telepon atau Password salah'
+            ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-
-        // Membuat Token (Tiket Masuk)
         $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
             'message' => 'Login Berhasil',
             'access_token' => $token,
             'token_type' => 'Bearer'
         ], 200);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json([
+            'message' => 'Berhasil mendapatkan data sesi',
+            'user' => $request->user()
+        ]);
     }
 
     // LOGOUT

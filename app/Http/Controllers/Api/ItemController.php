@@ -8,7 +8,7 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class ItemController extends Controller
 {
@@ -45,50 +45,84 @@ class ItemController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
         // Validasi input
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'item_name' => 'required|string|max:255',
             'item_info' => 'nullable|string',
-            'status' => 'required|in:lost,found',
-            'last_seen_location' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
+
+        $validated['user_id'] = $user->userId;
 
         try {
             // Handle upload gambar jika ada
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $image->storeAs('items', $imageName, 'public');
-                $validated['image'] = 'items/' . $imageName;
-            }
 
-            // Set last_seen_at ke waktu sekarang
-            $validated['last_seen_at'] = now();
+                $cloudName = env('CLOUDINARY_CLOUD_NAME');
+                $apiKey = env('CLOUDINARY_API_KEY');
+                $apiSecret = env('CLOUDINARY_API_SECRET');
+
+                $response = Http::asMultipart()
+                    ->withBasicAuth($apiKey, $apiSecret)
+                    ->post(
+                        "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
+                        [
+                            "file" => fopen($image->getRealPath(), "r"),
+                            "folder" => "items",
+                        ],
+                    );
+
+                if ($response->successful()) {
+                    $validated['image'] = $response->json('secure_url');
+                } else {
+                    throw new \Exception('Gagal upload gambar ke Cloudinary: ' . $response->body());
+                }
+            }
 
             // Buat item baru
             $item = Item::create($validated);
 
             // Generate QR Code dengan URL item
-            $qrUrl = route('api.items.show', ['itemId' => $item->itemId]);
             $result = Builder::create()
                 ->writer(new PngWriter())
-                ->data($qrUrl)
+                ->data($item->itemId)
                 ->build();
 
-            // Simpan QR Code
-            $qrFileName = 'qrcodes/' . $item->itemId . '.png';
-            Storage::disk('public')->put($qrFileName, $result->getString());
-            $item->qr_url = 'storage/' . $qrFileName;
+            // Simpan QR Code ke Cloudinary
+            $cloudName = env('CLOUDINARY_CLOUD_NAME');
+            $apiKey = env('CLOUDINARY_API_KEY');
+            $apiSecret = env('CLOUDINARY_API_SECRET');
+
+            $tempQrPath = sys_get_temp_dir() . '/' . uniqid() . '_qr.png';
+            file_put_contents($tempQrPath, $result->getString());
+
+            $qrResponse = Http::asMultipart()
+                ->withBasicAuth($apiKey, $apiSecret)
+                ->post(
+                    "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
+                    [
+                        "file" => fopen($tempQrPath, "r"),
+                        "folder" => "qrcodes",
+                    ],
+                );
+
+            if ($qrResponse->successful()) {
+                $item->qr_url = $qrResponse->json('secure_url');
+            } else {
+                throw new \Exception('Gagal upload QR Code ke Cloudinary: ' . $qrResponse->body());
+            }
             $item->save();
+
+            // Hapus file temporary
+            @unlink($tempQrPath);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Item berhasil ditambahkan',
                 'data' => $item
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -148,15 +182,44 @@ class ItemController extends Controller
         try {
             // Handle upload gambar baru jika ada
             if ($request->hasFile('image')) {
-                // Hapus gambar lama jika ada
+                // Hapus gambar lama dari Cloudinary jika diperlukan
                 if ($item->image) {
-                    Storage::disk('public')->delete($item->image);
+                    $cloudName = env('CLOUDINARY_CLOUD_NAME');
+                    $apiKey = env('CLOUDINARY_API_KEY');
+                    $apiSecret = env('CLOUDINARY_API_SECRET');
+
+                    // Mendapatkan public_id dari url (misalnya: https://res.cloudinary.com/cloudname/image/upload/v1234567/public_id.jpg)
+                    $urlParts = explode('/', $item->image);
+                    $fileWithExt = end($urlParts);
+                    $publicId = explode('.', $fileWithExt)[0];
+
+                    $response = Http::withBasicAuth($apiKey, $apiSecret)
+                        ->asForm()
+                        ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/destroy", [
+                            'public_id' => $publicId,
+                        ]);
                 }
 
                 $image = $request->file('image');
-                $imageName = time() . '_' . $image->getClientOriginalName();
-                $image->storeAs('items', $imageName, 'public');
-                $validated['image'] = 'items/' . $imageName;
+                $cloudName = env('CLOUDINARY_CLOUD_NAME');
+                $apiKey = env('CLOUDINARY_API_KEY');
+                $apiSecret = env('CLOUDINARY_API_SECRET');
+
+                $response = Http::asMultipart()
+                    ->withBasicAuth($apiKey, $apiSecret)
+                    ->post(
+                        "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
+                        [
+                            "file" => fopen($image->getRealPath(), "r"),
+                            "folder" => "items",
+                        ],
+                    );
+
+                if ($response->successful()) {
+                    $validated['image'] = $response->json('secure_url');
+                } else {
+                    throw new \Exception('Gagal upload gambar baru ke Cloudinary: ' . $response->body());
+                }
             }
 
             // Update last_seen_at jika ada perubahan status atau lokasi
@@ -172,7 +235,6 @@ class ItemController extends Controller
                 'message' => 'Item berhasil diupdate',
                 'data' => $item
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -198,18 +260,6 @@ class ItemController extends Controller
         }
 
         try {
-            // Hapus gambar jika ada
-            if ($item->image) {
-                Storage::disk('public')->delete($item->image);
-            }
-
-            // Hapus QR Code jika ada
-            if ($item->qr_url) {
-                // Extract path dari URL
-                $qrPath = str_replace('storage/', '', $item->qr_url);
-                Storage::disk('public')->delete($qrPath);
-            }
-
             // Hapus item dari database
             $item->delete();
 
@@ -217,7 +267,6 @@ class ItemController extends Controller
                 'success' => true,
                 'message' => 'Item berhasil dihapus'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

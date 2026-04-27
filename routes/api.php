@@ -11,9 +11,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // Route Private (Harus bawa Token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/me', [AuthController::class, 'me']);
     // Route Barang
     Route::apiResource('items', ItemController::class);
 });
