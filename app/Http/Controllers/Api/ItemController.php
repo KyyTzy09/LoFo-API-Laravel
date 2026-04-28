@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Item;
+use App\Models\ItemLocation;
 use Illuminate\Http\Request;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
@@ -186,58 +187,51 @@ class ItemController extends Controller
             'user_id' => 'sometimes|required|exists:users,id',
             'item_name' => 'sometimes|required|string|max:255',
             'item_info' => 'nullable|string',
-            'status' => 'sometimes|required|in:lost,found',
-            'last_seen_location' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'status' => 'sometimes|required|in:LOST,FOUND'
         ]);
 
         try {
             // Handle upload gambar baru jika ada
-            if ($request->hasFile('image')) {
-                // Hapus gambar lama dari Cloudinary jika diperlukan
-                if ($item->image) {
-                    $cloudName = env('CLOUDINARY_CLOUD_NAME');
-                    $apiKey = env('CLOUDINARY_API_KEY');
-                    $apiSecret = env('CLOUDINARY_API_SECRET');
+            // if ($request->hasFile('image')) {
+            //     // Hapus gambar lama dari Cloudinary jika diperlukan
+            //     if ($item->image) {
+            //         $cloudName = env('CLOUDINARY_CLOUD_NAME');
+            //         $apiKey = env('CLOUDINARY_API_KEY');
+            //         $apiSecret = env('CLOUDINARY_API_SECRET');
 
-                    // Mendapatkan public_id dari url (misalnya: https://res.cloudinary.com/cloudname/image/upload/v1234567/public_id.jpg)
-                    $urlParts = explode('/', $item->image);
-                    $fileWithExt = end($urlParts);
-                    $publicId = explode('.', $fileWithExt)[0];
+            //         // Mendapatkan public_id dari url (misalnya: https://res.cloudinary.com/cloudname/image/upload/v1234567/public_id.jpg)
+            //         $urlParts = explode('/', $item->image);
+            //         $fileWithExt = end($urlParts);
+            //         $publicId = explode('.', $fileWithExt)[0];
 
-                    $response = Http::withBasicAuth($apiKey, $apiSecret)
-                        ->asForm()
-                        ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/destroy", [
-                            'public_id' => $publicId,
-                        ]);
-                }
+            //         $response = Http::withBasicAuth($apiKey, $apiSecret)
+            //             ->asForm()
+            //             ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/destroy", [
+            //                 'public_id' => $publicId,
+            //             ]);
+            //     }
 
-                $image = $request->file('image');
-                $cloudName = env('CLOUDINARY_CLOUD_NAME');
-                $apiKey = env('CLOUDINARY_API_KEY');
-                $apiSecret = env('CLOUDINARY_API_SECRET');
+            //     $image = $request->file('image');
+            //     $cloudName = env('CLOUDINARY_CLOUD_NAME');
+            //     $apiKey = env('CLOUDINARY_API_KEY');
+            //     $apiSecret = env('CLOUDINARY_API_SECRET');
 
-                $response = Http::asMultipart()
-                    ->withBasicAuth($apiKey, $apiSecret)
-                    ->post(
-                        "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
-                        [
-                            "file" => fopen($image->getRealPath(), "r"),
-                            "folder" => "items",
-                        ],
-                    );
+            //     $response = Http::asMultipart()
+            //         ->withBasicAuth($apiKey, $apiSecret)
+            //         ->post(
+            //             "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
+            //             [
+            //                 "file" => fopen($image->getRealPath(), "r"),
+            //                 "folder" => "items",
+            //             ],
+            //         );
 
-                if ($response->successful()) {
-                    $validated['image'] = $response->json('secure_url');
-                } else {
-                    throw new \Exception('Gagal upload gambar baru ke Cloudinary: ' . $response->body());
-                }
-            }
-
-            // Update last_seen_at jika ada perubahan status atau lokasi
-            if ($request->has('status') || $request->has('last_seen_location')) {
-                $validated['last_seen_at'] = now();
-            }
+            //     if ($response->successful()) {
+            //         $validated['image'] = $response->json('secure_url');
+            //     } else {
+            //         throw new \Exception('Gagal upload gambar baru ke Cloudinary: ' . $response->body());
+            //     }
+            // }
 
             // Update item
             $item->update($validated);
@@ -256,6 +250,61 @@ class ItemController extends Controller
         }
     }
 
+    public function updateItemLastSeen(Request $request, string $itemId)
+    {
+        $item = Item::find($itemId);
+
+        if (!$item) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item tidak ditemukan'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'longitude' => 'required|numeric',
+            'latitude' => 'required|numeric',
+            'last_seen_time' => 'required|date'
+        ]);
+
+        try {
+            $itemLocation = ItemLocation::where('item_id', $itemId)->latest()->first();
+            if (!$itemLocation) {
+                ItemLocation::create([
+                    'item_id' => $itemId,
+                    'longitude' => $request->longitude,
+                    'latitude' => $request->latitude,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Lokasi dan waktu terakhir item berhasil diupdate',
+                    'data' => $item
+                ]);
+            }
+
+            $item->update([
+                'last_seen_at' => $validated['last_seen_time'],
+            ]);
+
+            $itemLocation->update([
+                'longitude' => $request->longitude,
+                'latitude' => $request->latitude,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lokasi dan waktu terakhir item berhasil diupdate',
+                'data' => $item
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate lokasi dan waktu terakhir item',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Remove the specified resource from storage.
      * Fitur: Hapus data item
