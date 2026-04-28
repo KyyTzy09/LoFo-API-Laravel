@@ -19,7 +19,6 @@ class Item extends Model
         'item_info',
         'status',
         'qr_url',
-        'last_seen_location',
         'last_seen_at'
     ];
 
@@ -35,5 +34,9 @@ class Item extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function last_seen_location() {
+        return $this->hasOne(ItemLocation::class)->latestOfMany();
     }
 }
