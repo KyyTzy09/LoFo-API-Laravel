@@ -17,12 +17,12 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'username' => 'required',
-            'phone_number' => 'required|digits_between:10,13|unique:users',
+            'phone_number' => 'required|digits_between:10,13',
             'password' => 'required|min:8',
             'address' => 'nullable|string'
         ]);
 
-        if ($validator->fails()) return response()->json($validator->errors(), 422);
+        if ($validator->fails()) return response()->json(['message' => $validator->errors()], 422);
 
         $user = User::create([
             'phone_number' => $request->phone_number,
@@ -44,7 +44,7 @@ class AuthController extends Controller
             'phone_number' => 'required|digits_between:10,13',
             'password' => 'required'
         ]);
-        if ($validator->fails()) return response()->json($validator->errors(), 422);
+        if ($validator->fails()) return response()->json(['message' => $validator->errors()], 422);
 
         $user = User::where('phone_number', $request->phone_number)->first();
         if (!$user || !Hash::check($request->password, $user->password)) {

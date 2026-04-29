@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Models\ItemLocation;
@@ -151,8 +150,7 @@ class ItemController extends Controller
      */
     public function show(string $itemId)
     {
-        $item = Item::find($itemId);
-
+        $item = Item::where('itemId', $itemId)->with(['user', 'last_seen_location'])->first();
         if (!$item) {
             return response()->json([
                 'success' => false,
