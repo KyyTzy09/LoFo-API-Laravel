@@ -7,16 +7,11 @@ use Illuminate\Support\Str;
 
 class ItemLocation extends Model
 {
-    protected $primaryKey = 'locationId';
+    protected $primaryKey = "locationId";
     public $incrementing = false;
-    protected $keyType = 'string';
+    protected $keyType = "string";
 
-    protected $fillable = [
-        'locationId',
-        'item_id',
-        'latitude',
-        'longitude',
-    ];
+    protected $fillable = ["locationId", "item_id", "latitude", "longitude"];
 
     protected static function booted()
     {
@@ -28,11 +23,6 @@ class ItemLocation extends Model
     }
 
     public function item()
-    {
-        return $this->belongsTo(Item::class);
-    }
-
-    public function location()
     {
         return $this->belongsTo(Item::class);
     }

@@ -21,33 +21,33 @@ class ItemController extends Controller
         $query = Item::query();
 
         // Filter berdasarkan nama jika parameter 'name' ada
-        if ($request->has('name')) {
-            $query->where('item_name', 'like', '%' . $request->name . '%');
+        if ($request->has("name")) {
+            $query->where("item_name", "like", "%" . $request->name . "%");
         }
 
         // Filter berdasarkan status jika parameter 'status' ada
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if ($request->has("status")) {
+            $query->where("status", $request->status);
         }
 
         $items = $query->get();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Data item berhasil diambil',
-            'data' => $items
+            "success" => true,
+            "message" => "Data item berhasil diambil",
+            "data" => $items,
         ]);
     }
 
     public function getByUserId(Request $request)
     {
         $user = $request->user();
-        $items = Item::where('user_id', $user->userId)->get();
+        $items = Item::where("user_id", $user->userId)->get();
 
         return response()->json([
-            'success' => true,
-            'message' => 'Data item berhasil diambil',
-            'data' => $items
+            "success" => true,
+            "message" => "Data item berhasil diambil",
+            "data" => $items,
         ]);
     }
 
@@ -60,21 +60,21 @@ class ItemController extends Controller
         $user = $request->user();
         // Validasi input
         $validated = $request->validate([
-            'item_name' => 'required|string|max:255',
-            'item_info' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            "item_name" => "required|string|max:255",
+            "item_info" => "nullable|string",
+            "image" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048",
         ]);
 
-        $validated['user_id'] = $user->userId;
+        $validated["user_id"] = $user->userId;
 
         try {
             // Handle upload gambar jika ada
-            if ($request->hasFile('image')) {
-                $image = $request->file('image');
+            if ($request->hasFile("image")) {
+                $image = $request->file("image");
 
-                $cloudName = env('CLOUDINARY_CLOUD_NAME');
-                $apiKey = env('CLOUDINARY_API_KEY');
-                $apiSecret = env('CLOUDINARY_API_SECRET');
+                $cloudName = env("CLOUDINARY_CLOUD_NAME");
+                $apiKey = env("CLOUDINARY_API_KEY");
+                $apiSecret = env("CLOUDINARY_API_SECRET");
 
                 $response = Http::asMultipart()
                     ->withBasicAuth($apiKey, $apiSecret)
@@ -87,9 +87,12 @@ class ItemController extends Controller
                     );
 
                 if ($response->successful()) {
-                    $validated['image'] = $response->json('secure_url');
+                    $validated["image"] = $response->json("secure_url");
                 } else {
-                    throw new \Exception('Gagal upload gambar ke Cloudinary: ' . $response->body());
+                    throw new \Exception(
+                        "Gagal upload gambar ke Cloudinary: " .
+                            $response->body(),
+                    );
                 }
             }
 
@@ -103,11 +106,11 @@ class ItemController extends Controller
                 ->build();
 
             // Simpan QR Code ke Cloudinary
-            $cloudName = env('CLOUDINARY_CLOUD_NAME');
-            $apiKey = env('CLOUDINARY_API_KEY');
-            $apiSecret = env('CLOUDINARY_API_SECRET');
+            $cloudName = env("CLOUDINARY_CLOUD_NAME");
+            $apiKey = env("CLOUDINARY_API_KEY");
+            $apiSecret = env("CLOUDINARY_API_SECRET");
 
-            $tempQrPath = sys_get_temp_dir() . '/' . uniqid() . '_qr.png';
+            $tempQrPath = sys_get_temp_dir() . "/" . uniqid() . "_qr.png";
             file_put_contents($tempQrPath, $result->getString());
 
             $qrResponse = Http::asMultipart()
@@ -121,26 +124,35 @@ class ItemController extends Controller
                 );
 
             if ($qrResponse->successful()) {
-                $item->qr_url = $qrResponse->json('secure_url');
+                $item->qr_url = $qrResponse->json("secure_url");
             } else {
-                throw new \Exception('Gagal upload QR Code ke Cloudinary: ' . $qrResponse->body());
+                throw new \Exception(
+                    "Gagal upload QR Code ke Cloudinary: " .
+                        $qrResponse->body(),
+                );
             }
             $item->save();
 
             // Hapus file temporary
             @unlink($tempQrPath);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Item berhasil ditambahkan',
-                'data' => $item
-            ], 201);
+            return response()->json(
+                [
+                    "success" => true,
+                    "message" => "Item berhasil ditambahkan",
+                    "data" => $item,
+                ],
+                201,
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambah item',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Gagal menambah item",
+                    "error" => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
@@ -150,18 +162,23 @@ class ItemController extends Controller
      */
     public function show(string $itemId)
     {
-        $item = Item::where('itemId', $itemId)->with(['user', 'last_seen_location'])->first();
+        $item = Item::where("itemId", $itemId)
+            ->with(["user", "last_seen_location"])
+            ->first();
         if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item tidak ditemukan'
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Item tidak ditemukan",
+                ],
+                404,
+            );
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Data item berhasil diambil',
-            'data' => $item
+            "success" => true,
+            "message" => "Data item berhasil diambil",
+            "data" => $item,
         ]);
     }
 
@@ -174,18 +191,21 @@ class ItemController extends Controller
         $item = Item::find($itemId);
 
         if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item tidak ditemukan'
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Item tidak ditemukan",
+                ],
+                404,
+            );
         }
 
         // Validasi input
         $validated = $request->validate([
-            'user_id' => 'sometimes|required|exists:users,id',
-            'item_name' => 'sometimes|required|string|max:255',
-            'item_info' => 'nullable|string',
-            'status' => 'sometimes|required|in:LOST,FOUND'
+            "user_id" => "sometimes|required|exists:users,id",
+            "item_name" => "sometimes|required|string|max:255",
+            "item_info" => "nullable|string",
+            "status" => "sometimes|required|in:LOST,FOUND",
         ]);
 
         try {
@@ -235,16 +255,19 @@ class ItemController extends Controller
             $item->update($validated);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Item berhasil diupdate',
-                'data' => $item
+                "success" => true,
+                "message" => "Item berhasil diupdate",
+                "data" => $item,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengupdate item',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Gagal mengupdate item",
+                    "error" => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
@@ -253,54 +276,68 @@ class ItemController extends Controller
         $item = Item::find($itemId);
 
         if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item tidak ditemukan'
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Item tidak ditemukan",
+                ],
+                404,
+            );
         }
 
         $validated = $request->validate([
-            'longitude' => 'required|numeric',
-            'latitude' => 'required|numeric',
-            'last_seen_time' => 'required|date'
+            "longitude" => "required|numeric",
+            "latitude" => "required|numeric",
         ]);
 
+        $lastSeenTime = now("UTC");
         try {
-            $itemLocation = ItemLocation::where('item_id', $itemId)->latest()->first();
+            $itemLocation = ItemLocation::where("item_id", $itemId)
+                ->latest()
+                ->first();
             if (!$itemLocation) {
                 ItemLocation::create([
-                    'item_id' => $itemId,
-                    'longitude' => $request->longitude,
-                    'latitude' => $request->latitude,
+                    "item_id" => $itemId,
+                    "longitude" => $request->longitude,
+                    "latitude" => $request->latitude,
+                ]);
+
+                $item->update([
+                    "last_seen_at" => $lastSeenTime,
                 ]);
 
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Lokasi dan waktu terakhir item berhasil diupdate',
-                    'data' => $item
+                    "success" => true,
+                    "message" =>
+                        "Lokasi dan waktu terakhir item berhasil diupdate",
+                    "data" => $item,
                 ]);
             }
 
-            $item->update([
-                'last_seen_at' => $validated['last_seen_time'],
+            $itemLocation->update([
+                "longitude" => $request->longitude,
+                "latitude" => $request->latitude,
             ]);
 
-            $itemLocation->update([
-                'longitude' => $request->longitude,
-                'latitude' => $request->latitude,
+            $item->update([
+                "last_seen_at" => $lastSeenTime,
             ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Lokasi dan waktu terakhir item berhasil diupdate',
-                'data' => $item
+                "success" => true,
+                "message" => "Lokasi dan waktu terakhir item berhasil diupdate",
+                "data" => $item,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengupdate lokasi dan waktu terakhir item',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" =>
+                        "Gagal mengupdate lokasi dan waktu terakhir item",
+                    "error" => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
     /**
@@ -312,10 +349,13 @@ class ItemController extends Controller
         $item = Item::find($itemId);
 
         if (!$item) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Item tidak ditemukan'
-            ], 404);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Item tidak ditemukan",
+                ],
+                404,
+            );
         }
 
         try {
@@ -323,15 +363,18 @@ class ItemController extends Controller
             $item->delete();
 
             return response()->json([
-                'success' => true,
-                'message' => 'Item berhasil dihapus'
+                "success" => true,
+                "message" => "Item berhasil dihapus",
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menghapus item',
-                'error' => $e->getMessage()
-            ], 500);
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Gagal menghapus item",
+                    "error" => $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 }

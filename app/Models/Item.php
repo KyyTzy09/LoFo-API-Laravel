@@ -22,6 +22,7 @@ class Item extends Model
         'last_seen_at'
     ];
 
+
     protected static function booted()
     {
         static::creating(function ($Item) {

@@ -22,10 +22,9 @@ return new class extends Migration
             $table->enum('status', ['TERSEDIA', 'HILANG'])->default('TERSEDIA');
 
             $table->text('qr_url')->nullable();
-
-            $table->string('last_seen_location')->nullable();
+            
             $table->timestamp('last_seen_at')->nullable();
-
+            
             $table->timestamps();
 
             $table->foreign('user_id')->references('userId')->on('users');

@@ -20,7 +20,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
 
     // Route Items (CRUD)
-    Route::apiResource('items', ItemController::class);
+    Route::get('/items', [ItemController::class, 'index']);
+    Route::get('/items/{id}', [ItemController::class, 'show']);
+    Route::post('/items', [ItemController::class, 'store']);
+    Route::patch('/items/{id}', [ItemController::class, 'update']);
+    Route::delete('/items/{id}', [ItemController::class, 'destroy']);    
 
     // Route Announcement (CRUD)
     Route::post('/announcements', [AnnouncementController::class, 'store']);
