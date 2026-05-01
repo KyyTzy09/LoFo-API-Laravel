@@ -14,10 +14,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // User Routes
     Route::get('/users/items', [ItemController::class, 'getByUserId']);
     Route::get('/users/announcements', [AnnouncementController::class, 'showByUser']);
-
+    Route::get('/users/me', [AuthController::class, 'me']);
+    
     // Auth Routes
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me', [AuthController::class, 'me']);
 
     // Route Items (CRUD)
     Route::get('/items', [ItemController::class, 'index']);

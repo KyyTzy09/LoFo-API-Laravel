@@ -57,9 +57,7 @@ class AnnouncementController extends Controller
      */
     public function show($id)
     {
-        // Load user and we assume user relation has 'profile' relationship defined
-        $announcement = Announcement::with(['user', 'user.profile'])->findOrFail($id);
-
+        $announcement = Announcement::with(['user', 'user.profile', 'item'])->findOrFail($id);
         return response()->json([
             'message' => 'Pengumuman berhasil didapatkan',
             'data' => $announcement

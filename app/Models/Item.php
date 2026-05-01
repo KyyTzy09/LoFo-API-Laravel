@@ -7,21 +7,20 @@ use Illuminate\Support\Str;
 
 class Item extends Model
 {
-    protected $primaryKey = 'itemId';
+    protected $primaryKey = "itemId";
     public $incrementing = false;
-    protected $keyType = 'string';
+    protected $keyType = "string";
 
     protected $fillable = [
-        'itemId',
-        'user_id',
-        'image',
-        'item_name',
-        'item_info',
-        'status',
-        'qr_url',
-        'last_seen_at'
+        "itemId",
+        "user_id",
+        "image",
+        "item_name",
+        "item_info",
+        "status",
+        "qr_url",
+        "last_seen_at",
     ];
-
 
     protected static function booted()
     {
@@ -34,10 +33,15 @@ class Item extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, "user_id", "userId");
     }
 
-    public function last_seen_location() {
-        return $this->hasOne(ItemLocation::class)->latestOfMany();
+    public function last_seen_location()
+    {
+        return $this->hasOne(
+            ItemLocation::class,
+            "item_id",
+            "itemId",
+        )->latestOfMany("locationId");
     }
 }

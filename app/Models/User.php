@@ -9,7 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     use HasApiTokens;
-    
+
     protected $primaryKey = 'userId';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -17,6 +17,10 @@ class User extends Authenticatable
     protected $fillable = [
         'userId',
         'phone_number',
+        'password',
+    ];
+
+    protected $hidden = [
         'password',
     ];
 

@@ -163,7 +163,7 @@ class ItemController extends Controller
     public function show(string $itemId)
     {
         $item = Item::where("itemId", $itemId)
-            ->with(["user", "last_seen_location"])
+            ->with(["user", "user.profile", "last_seen_location"])
             ->first();
         if (!$item) {
             return response()->json(
