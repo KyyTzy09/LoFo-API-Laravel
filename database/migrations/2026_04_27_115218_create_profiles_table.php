@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('username');
             $table->text('info')->nullable();
             $table->string('address')->nullable();
+            $table->string('avatar')->nullable();
 
             $table->foreign('user_id')->references('userId')->on('users')->cascadeOnDelete();
             $table->timestamps();
