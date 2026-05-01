@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -15,6 +14,8 @@ class AuthController extends Controller
     // REGISTER
     public function register(Request $request)
     {
+        $random = rand(1, 1000);
+        $avatar = "https://api.dicebear.com/9.x/avataaars/svg?seed=$random&backgroundColor=c084fc,9333ea";
         $validator = Validator::make($request->all(), [
             'username' => 'required',
             'phone_number' => 'required|digits_between:10,13',
@@ -23,7 +24,6 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) return response()->json(['message' => $validator->errors()], 422);
-
         $user = User::create([
             'phone_number' => $request->phone_number,
             'password' => Hash::make($request->password)
@@ -31,7 +31,8 @@ class AuthController extends Controller
 
         $user->profile()->create([
             'username' => $request->username,
-            'address' => $request->address
+            'address' => $request->address,
+            'avatar' => $avatar
         ]);
 
         return response()->json(['message' => 'Register Berhasil', 'data' => $user], 201);

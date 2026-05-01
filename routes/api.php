@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -12,10 +13,12 @@ Route::post('/login', [AuthController::class, 'login']);
 // Route Private (Harus bawa Token)
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
-    Route::get('/users/items', [ItemController::class, 'getByUserId']);
-    Route::get('/users/announcements', [AnnouncementController::class, 'showByUser']);
     Route::get('/users/me', [AuthController::class, 'me']);
-    
+    Route::get('/users/profile', [UserController::class, 'Profile']);
+    Route::get('/users/items', [UserController::class, 'Items']);
+    Route::get('/users/announcements', [UserController::class, 'Announcement']);
+    Route::patch('/users/profile', [UserController::class, 'UpdateProfile']);
+
     // Auth Routes
     Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -24,7 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/items/{id}', [ItemController::class, 'show']);
     Route::post('/items', [ItemController::class, 'store']);
     Route::patch('/items/{id}', [ItemController::class, 'update']);
-    Route::delete('/items/{id}', [ItemController::class, 'destroy']);    
+    Route::delete('/items/{id}', [ItemController::class, 'destroy']);
 
     // Route Announcement (CRUD)
     Route::post('/announcements', [AnnouncementController::class, 'store']);
