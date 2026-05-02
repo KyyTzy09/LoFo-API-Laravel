@@ -8,7 +8,6 @@ use App\Models\Item;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -36,7 +35,7 @@ class UserController extends Controller
     public function Items(Request $request)
     {
         $user = $request->user();
-        $items = Item::where('userId', $user->userId)->get();
+        $items = Item::where('user_id', $user->userId)->get();
         return response()->json([
             'status' => 200,
             'message' => 'User Items retrieved successfully',

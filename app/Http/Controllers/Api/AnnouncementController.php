@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\Item;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Validator;
 
 class AnnouncementController extends Controller
 {
@@ -16,20 +17,27 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        $validated = $request->validate([
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validated = Validator::make($request->all(), [
             'item_id' => 'nullable|string',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'location' => 'required|string|max:255',
-            'lost_at' => 'required|date',
+            'lost_at' => 'required|date_format:d/m/Y H:i',
         ]);
 
-        // Default status is 'PENDING'
-        $validated['status'] = 'PENDING';
+        $lost_at = Carbon::createFromFormat('d/m/Y H:i', $request->lost_at);
 
-        // Use authenticated user or fallback to request input
-        // Assumes typical auth flow, adjust if user_id is sent differently
-        $validated['user_id'] = $user->userId;
+        // Default status is 'PENDING'
+        if ($validated->fails()) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $validated->errors()
+            ], 422);
+        }
 
         $pendingAnnouncement = Announcement::where('item_id', $request->item_id)
             ->where('status', 'PENDING')
@@ -41,7 +49,15 @@ class AnnouncementController extends Controller
             ], 409); // Conflict
         }
 
-        $announcement = Announcement::create($validated);
+        $announcement = Announcement::create([
+            'user_id' => $user->userId,
+            'item_id' => $request->item_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'location' => $request->location,
+            'lost_at' => $lost_at,
+            'status' => 'PENDING'
+        ]);
         if ($request->item_id !== null) {
             Item::where('itemId', $request->item_id)->update(['status' => 'HILANG']);
         }
