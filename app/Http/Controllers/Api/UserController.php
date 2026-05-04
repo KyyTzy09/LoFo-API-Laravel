@@ -46,16 +46,19 @@ class UserController extends Controller
     public function UpdateProfile(Request $request)
     {
         $user = $request->user();
-        $validated = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:255',
             'info' => 'nullable|string|max:255',
         ]);
-        if ($validated->fails()) {
+
+        if ($validator->fails()) {
             return response()->json([
                 'status' => 422,
-                'message' => $validated->errors()
+                'message' => $validator->errors()
             ]);
         }
+
+        $validated = $validator->validated();
 
         $existingProfile = Profile::where("user_id", $user->userId)->first();
         if (!$existingProfile) {
@@ -65,7 +68,7 @@ class UserController extends Controller
             ]);
         }
 
-        $existingProfile->update($request);
+        $existingProfile->update($validated);
         return response()->json([
             'status' => 200,
             'message' => 'User Profile updated successfully',

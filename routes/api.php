@@ -30,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/items/{id}', [ItemController::class, 'destroy']);
 
     // Route Announcement (CRUD)
+    Route::get('/announcements', [AnnouncementController::class, 'index']);
     Route::get('/announcements/pending', [AnnouncementController::class, 'showPending']);
     Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
     Route::patch('/announcements/{id}', [AnnouncementController::class, 'update']);

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 
 class ItemController extends Controller
 {
@@ -57,25 +58,36 @@ class ItemController extends Controller
      */
     public function store(Request $request)
     {
+        $cloudName = env("CLOUDINARY_CLOUD_NAME");
+        $apiKey = env("CLOUDINARY_API_KEY");
+        $apiSecret = env("CLOUDINARY_API_SECRET");
         $user = $request->user();
         // Validasi input
-        $validated = $request->validate([
+
+        $validator = Validator::make($request->all(), [
             "item_name" => "required|string|max:255",
             "item_info" => "nullable|string",
             "image" => "nullable|image|mimes:jpeg,png,jpg,gif|max:2048",
         ]);
 
+        if ($validator->fails()) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Validation Error",
+                    "errors" => $validator->errors(),
+                ],
+                422,
+            );
+        }
+
+        $validated = $validator->validated();
         $validated["user_id"] = $user->userId;
 
         try {
             // Handle upload gambar jika ada
             if ($request->hasFile("image")) {
                 $image = $request->file("image");
-
-                $cloudName = env("CLOUDINARY_CLOUD_NAME");
-                $apiKey = env("CLOUDINARY_API_KEY");
-                $apiSecret = env("CLOUDINARY_API_SECRET");
-
                 $response = Http::asMultipart()
                     ->withBasicAuth($apiKey, $apiSecret)
                     ->post(
@@ -106,9 +118,7 @@ class ItemController extends Controller
                 ->build();
 
             // Simpan QR Code ke Cloudinary
-            $cloudName = env("CLOUDINARY_CLOUD_NAME");
-            $apiKey = env("CLOUDINARY_API_KEY");
-            $apiSecret = env("CLOUDINARY_API_SECRET");
+
 
             $tempQrPath = sys_get_temp_dir() . "/" . uniqid() . "_qr.png";
             file_put_contents($tempQrPath, $result->getString());
@@ -149,7 +159,7 @@ class ItemController extends Controller
                 [
                     "success" => false,
                     "message" => "Gagal menambah item",
-                    "error" => $e->getMessage(),
+                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
                 ],
                 500,
             );
@@ -264,7 +274,7 @@ class ItemController extends Controller
                 [
                     "success" => false,
                     "message" => "Gagal mengupdate item",
-                    "error" => $e->getMessage(),
+                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
                 ],
                 500,
             );
@@ -309,7 +319,7 @@ class ItemController extends Controller
                 return response()->json([
                     "success" => true,
                     "message" =>
-                        "Lokasi dan waktu terakhir item berhasil diupdate",
+                    "Lokasi dan waktu terakhir item berhasil diupdate",
                     "data" => $item,
                 ]);
             }
@@ -333,8 +343,8 @@ class ItemController extends Controller
                 [
                     "success" => false,
                     "message" =>
-                        "Gagal mengupdate lokasi dan waktu terakhir item",
-                    "error" => $e->getMessage(),
+                    "Gagal mengupdate lokasi dan waktu terakhir item",
+                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
                 ],
                 500,
             );
@@ -371,7 +381,7 @@ class ItemController extends Controller
                 [
                     "success" => false,
                     "message" => "Gagal menghapus item",
-                    "error" => $e->getMessage(),
+                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
                 ],
                 500,
             );

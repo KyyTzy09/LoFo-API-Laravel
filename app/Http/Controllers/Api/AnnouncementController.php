@@ -11,6 +11,15 @@ use Illuminate\Support\Facades\Validator;
 
 class AnnouncementController extends Controller
 {
+    public function index()
+    {
+        $announcements = Announcement::with(['user', 'user.profile', 'item'])->get();
+        return response()->json([
+            'message' => 'Semua pengumuman berhasil didapatkan',
+            'data' => $announcements
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -21,7 +30,7 @@ class AnnouncementController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        $validated = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'item_id' => 'nullable|string',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
@@ -32,16 +41,24 @@ class AnnouncementController extends Controller
         $lost_at = Carbon::createFromFormat('d/m/Y H:i', $request->lost_at);
 
         // Default status is 'PENDING'
-        if ($validated->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation Error',
-                'errors' => $validated->errors()
+                'errors' => $validator->errors()
             ], 422);
         }
+
+        $validated = $validator->validated();
+
+        $validated['user_id'] = $user->userId;
+        $validated['lost_at'] = $lost_at;
+        $validated['status'] = 'PENDING';
+
 
         $pendingAnnouncement = Announcement::where('item_id', $request->item_id)
             ->where('status', 'PENDING')
             ->first();
+
         if ($pendingAnnouncement) {
             return response()->json([
                 'message' => 'Terdapat pengumuman yang sedang berlangsung untuk item ini',
@@ -49,15 +66,7 @@ class AnnouncementController extends Controller
             ], 409); // Conflict
         }
 
-        $announcement = Announcement::create([
-            'user_id' => $user->userId,
-            'item_id' => $request->item_id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'location' => $request->location,
-            'lost_at' => $lost_at,
-            'status' => 'PENDING'
-        ]);
+        $announcement = Announcement::create($validated);
         if ($request->item_id !== null) {
             Item::where('itemId', $request->item_id)->update(['status' => 'HILANG']);
         }
