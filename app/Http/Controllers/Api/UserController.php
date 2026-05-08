@@ -7,7 +7,9 @@ use App\Models\Announcement;
 use App\Models\Item;
 use App\Models\Profile;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
@@ -76,7 +78,8 @@ class UserController extends Controller
         ]);
     }
 
-    public function Announcement(Request $request) {
+    public function Announcement(Request $request)
+    {
         $user = $request->user();
         $announcements = Announcement::where('user_id', $user->userId)->get();
         return response()->json([

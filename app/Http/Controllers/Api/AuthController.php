@@ -18,7 +18,7 @@ class AuthController extends Controller
         $avatar = "https://api.dicebear.com/9.x/avataaars/svg?seed=$random&backgroundColor=c084fc,9333ea";
         $validator = Validator::make($request->all(), [
             'username' => 'required',
-            'phone_number' => 'required|digits_between:10,13',
+            'phone_number' => 'required|digits_between:10,14',
             'password' => 'required|min:8',
             'address' => 'nullable|string'
         ]);
@@ -42,7 +42,7 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phone_number' => 'required|digits_between:10,13',
+            'phone_number' => 'required|digits_between:10,14',
             'password' => 'required'
         ]);
         if ($validator->fails()) return response()->json(['message' => $validator->errors()], 422);

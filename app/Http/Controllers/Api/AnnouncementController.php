@@ -54,16 +54,17 @@ class AnnouncementController extends Controller
         $validated['lost_at'] = $lost_at;
         $validated['status'] = 'PENDING';
 
+        if ($request->item_id !== null) {
+            $pendingAnnouncement = Announcement::where('item_id', $request->item_id)
+                ->where('status', 'PENDING')
+                ->first();
 
-        $pendingAnnouncement = Announcement::where('item_id', $request->item_id)
-            ->where('status', 'PENDING')
-            ->first();
-
-        if ($pendingAnnouncement) {
-            return response()->json([
-                'message' => 'Terdapat pengumuman yang sedang berlangsung untuk item ini',
-                'data' => $pendingAnnouncement
-            ], 409); // Conflict
+            if ($pendingAnnouncement) {
+                return response()->json([
+                    'message' => 'Terdapat pengumuman yang sedang berlangsung untuk item ini',
+                    'data' => $pendingAnnouncement
+                ], 409); // Conflict
+            }
         }
 
         $announcement = Announcement::create($validated);
