@@ -211,13 +211,25 @@ class ItemController extends Controller
         }
 
         // Validasi input
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), ([
             "user_id" => "sometimes|required|exists:users,id",
             "item_name" => "sometimes|required|string|max:255",
             "item_info" => "nullable|string",
             "status" => "sometimes|required|in:LOST,FOUND",
-        ]);
+        ]));
 
+        if ($validator->fails()) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Validation Error",
+                    "errors" => $validator->errors(),
+                ],
+                422,
+            );
+        }
+
+        $validated = $validator->validated();
         try {
             // Handle upload gambar baru jika ada
             // if ($request->hasFile('image')) {
@@ -283,8 +295,23 @@ class ItemController extends Controller
 
     public function updateItemLastSeen(Request $request, string $itemId)
     {
-        $item = Item::find($itemId);
+        $validator = Validator::make($request->all(), ([
+            "longitude" => "required|numeric",
+            "latitude" => "required|numeric",
+        ]));
 
+        if ($validator->fails()) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Validation Error",
+                    "errors" => $validator->errors(),
+                ],
+                422,
+            );
+        }
+
+        $item = Item::find($itemId);
         if (!$item) {
             return response()->json(
                 [
@@ -295,11 +322,7 @@ class ItemController extends Controller
             );
         }
 
-        $validated = $request->validate([
-            "longitude" => "required|numeric",
-            "latitude" => "required|numeric",
-        ]);
-
+        $validated = $validator->validated();
         $lastSeenTime = now("UTC");
         try {
             $itemLocation = ItemLocation::where("item_id", $itemId)
@@ -308,8 +331,8 @@ class ItemController extends Controller
             if (!$itemLocation) {
                 ItemLocation::create([
                     "item_id" => $itemId,
-                    "longitude" => $request->longitude,
-                    "latitude" => $request->latitude,
+                    "longitude" => $validated["longitude"],
+                    "latitude" => $validated["latitude"],
                 ]);
 
                 $item->update([
