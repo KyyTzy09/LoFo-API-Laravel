@@ -127,6 +127,11 @@ class AnnouncementController extends Controller
             'status' => $request->input('status')
         ]);
 
+        $itemId = $announcement->item_id;
+        if ($itemId && $request->input('status') === 'CLOSED') {
+            Item::where('itemId', $itemId)->update(['status' => 'TERSEDIA']);
+        }
+
         return response()->json([
             'message' => 'Status pengumuman berhasil diperbarui',
             'data' => $announcement
