@@ -294,7 +294,7 @@ class ItemController extends Controller
         ]);
     }
 
-    public function updateItemLastSeen(Request $request, string $itemId)
+    public function updateItemLastSeen(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), ([
             "longitude" => "required|numeric",
@@ -312,7 +312,7 @@ class ItemController extends Controller
             );
         }
 
-        $item = Item::find($itemId);
+        $item = Item::find($id);
         if (!$item) {
             return response()->json(
                 [
@@ -326,7 +326,7 @@ class ItemController extends Controller
         $validated = $validator->validated();
         $lastSeenTime = now("UTC");
         try {
-            $itemLocation = ItemLocation::where("item_id", $itemId)
+            $itemLocation = ItemLocation::where("item_id", $id)
                 ->latest()
                 ->first();
             if (!$itemLocation) {
