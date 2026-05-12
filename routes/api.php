@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/items/{id}', [ItemController::class, 'show']);
     Route::post('/items', [ItemController::class, 'store']);
     Route::delete('/items/{id}', [ItemController::class, 'destroy']);
+    Route::patch('/items/{id}/location', [ItemController::class, 'updateItemLastSeen']);
 
     // Route Announcement (CRUD)
     Route::get('/announcements', [AnnouncementController::class, 'index']);
