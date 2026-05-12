@@ -40,6 +40,108 @@ class ItemController extends Controller
         ]);
     }
 
+    /**
+     * Update the specified resource in storage.
+     * Fitur: Update data item
+     */
+    public function update(Request $request, string $id)
+    {
+        $item = Item::find($id);
+
+        if (!$item) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Item tidak ditemukan",
+                ],
+                404,
+            );
+        }
+
+        // Validasi input
+        $validator = Validator::make($request->all(), ([
+            "item_name" => "sometimes|required|string|max:255",
+            "item_info" => "nullable|string",
+        ]));
+
+        if ($validator->fails()) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Validation Error",
+                    "errors" => $validator->errors(),
+                ],
+                422,
+            );
+        }
+
+        $validated = $validator->validated();
+        try {
+            // Handle upload gambar baru jika ada
+            // if ($request->hasFile('image')) {
+            //     // Hapus gambar lama dari Cloudinary jika diperlukan
+            //     if ($item->image) {
+            //         $cloudName = env('CLOUDINARY_CLOUD_NAME');
+            //         $apiKey = env('CLOUDINARY_API_KEY');
+            //         $apiSecret = env('CLOUDINARY_API_SECRET');
+
+            //         // Mendapatkan public_id dari url (misalnya: https://res.cloudinary.com/cloudname/image/upload/v1234567/public_id.jpg)
+            //         $urlParts = explode('/', $item->image);
+            //         $fileWithExt = end($urlParts);
+            //         $publicId = explode('.', $fileWithExt)[0];
+
+            //         $response = Http::withBasicAuth($apiKey, $apiSecret)
+            //             ->asForm()
+            //             ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/destroy", [
+            //                 'public_id' => $publicId,
+            //             ]);
+            //     }
+
+            //     $image = $request->file('image');
+            //     $cloudName = env('CLOUDINARY_CLOUD_NAME');
+            //     $apiKey = env('CLOUDINARY_API_KEY');
+            //     $apiSecret = env('CLOUDINARY_API_SECRET');
+
+            //     $response = Http::asMultipart()
+            //         ->withBasicAuth($apiKey, $apiSecret)
+            //         ->post(
+            //             "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
+            //             [
+            //                 "file" => fopen($image->getRealPath(), "r"),
+            //                 "folder" => "items",
+            //             ],
+            //         );
+
+            //     if ($response->successful()) {
+            //         $validated['image'] = $response->json('secure_url');
+            //     } else {
+            //         throw new \Exception('Gagal upload gambar baru ke Cloudinary: ' . $response->body());
+            //     }
+            // }
+
+            // Update item
+            $item->update([
+                "item_name" => $validated["item_name"] ?? $item->item_name,
+                "item_info" => $validated["item_info"] ?? $item->item_info,
+            ]);
+
+            return response()->json([
+                "success" => true,
+                "message" => "Item berhasil diupdate",
+                "data" => $item,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(
+                [
+                    "success" => false,
+                    "message" => "Gagal mengupdate item",
+                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
+                ],
+                500,
+            );
+        }
+    }
+
     public function getByUserId(Request $request)
     {
         $user = $request->user();
