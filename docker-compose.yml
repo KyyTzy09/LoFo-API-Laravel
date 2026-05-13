@@ -1,0 +1,44 @@
+services:
+  # App Laravel
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_api_app
+    volumes:
+      - .:/var/www
+    networks:
+      - api_net
+
+  # Web Server Caddy
+  webserver:
+    image: caddy:latest
+    container_name: laravel_api_caddy
+    ports:
+      - "8080:80"  # Akses di browser lewat localhost:8080
+    volumes:
+      - .:/var/www
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - app
+    networks:
+      - api_net
+
+  # Database MySQL
+  db:
+    image: mysql:8.0
+    container_name: laravel_api_db
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-laravel_db}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - api_net
+
+networks:
+  api_net:
+    driver: bridge
+
+volumes:
+  db_data:

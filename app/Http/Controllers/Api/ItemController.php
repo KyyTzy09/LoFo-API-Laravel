@@ -331,7 +331,7 @@ class ItemController extends Controller
                 ->first();
             if (!$itemLocation) {
                 ItemLocation::create([
-                    "item_id" => $itemId,
+                    "item_id" => $id,
                     "longitude" => $validated["longitude"],
                     "latitude" => $validated["latitude"],
                 ]);
