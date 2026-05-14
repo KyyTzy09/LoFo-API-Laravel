@@ -1,59 +1,135 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+Explore api routes
 
+Read [](file:///c%3A/laragon/www/lofo-api/routes/api.php)
+
+Optimized tool selection
+
+Read [](file:///c%3A/laragon/www/lofo-api/routes/api.php)
+
+Berdasarkan struktur folder dan rute yang ada di dalam api.php Anda, ini adalah versi README.md yang sudah disesuaikan secara detail dengan rute, controller, dan kemampuan API yang ada di *source code* Anda.
+
+```markdown
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <a href="#" target="_blank">
+    <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="300" alt="Laravel Logo" />
+  </a>
 </p>
+<h1 align="center">📦 Lofo API</h1> <p align="center"> Backend REST API yang dibangun menggunakan <b>Laravel</b> untuk aplikasi mobile <b>Lofo</b>. </p>
 
-## About Laravel
+## 🚀 Gambaran Umum
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Lofo API adalah layanan backend yang dirancang untuk aplikasi mobile yang memungkinkan pengguna untuk:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- 🔐 **Melakukan autentikasi dengan aman** (login/registrasi & logout) berbasis token Sanctum.
+- 👤 **Manajemen Profil** pengguna.
+- 🏷️ **Membuat dan mengelola barang (Items)** yang diunggah pengguna.
+- 📍 **Melacak Lokasi Barang** (update lokasi terakhir barang ditemukan).
+- 📢 **Membuat dan mengelola Pengumuman (Announcements)**.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🧩 Teknologi yang Digunakan
 
-## Learning Laravel
+- **Framework:** Laravel
+- **ORM:** Eloquent
+- **Database:** Relasional (MySQL / PostgreSQL sesuai `.env`)
+- **Bahasa:** PHP
+- **Autentikasi:** Laravel Sanctum (Token-based)
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🛠️ Langkah Instalasi
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. **Clone repository dan masuk ke direktori proyek**
+   ```bash
+   git clone <repo-url>
+   cd lofo-api
+   ```
 
-## Laravel Sponsors
+2. **Instal dependensi PHP**
+   ```bash
+   composer install
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+3. **Konfigurasi variabel lingkungan**
+   Salin file `.env.example` ke `.env` dan sesuaikan pengaturan database Anda:
+   ```bash
+   cp .env.example .env
+   ```
 
-### Premium Partners
+4. **Generate Application Key**
+   ```bash
+   php artisan key:generate
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+5. **Setup Database (Migrasi & Seeder)**
+   Jalankan migrasi untuk membangun tabel-table seperti *Users*, *Profiles*, *Items*, *Announcements*, *ItemLocations*.
+   ```bash
+   php artisan migrate
+   php artisan db:seed
+   ```
 
-## Contributing
+## 🚀 Menjalankan Proyek
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Mulai development server bawaan Laravel:
 
-## Code of Conduct
+```bash
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 📘 Struktur API (Endpoints)
 
-## Security Vulnerabilities
+Semua rute dilindungi oleh Middleware `auth:sanctum` **kecuali** Login & Registrasi. Berikut adalah titik akses Endpoint yang tersedia.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 🔐 Publik (Tanpa Token)
+* `POST /api/register` - Registrasi pengguna baru.
+* `POST /api/login` - Login pengguna dan mendapatkan token.
 
-## License
+### 🛡️ Privat (Membutuhkan Bearer Token)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Akun & Profil (`UserController` & `AuthController`)**
+* `GET /api/users/me` - Menampilkan info otentikasi saat ini.
+* `GET /api/users/profile` - Menampilkan data profil user.
+* `PATCH /api/users/profile` - Memperbarui profil user.
+* `GET /api/users/items` - Menampilkan semua barang milik user tersebut.
+* `GET /api/users/announcements` - Menampilkan pengumuman miliki user tersebut.
+* `POST /api/logout` - Logout dan hapus token.
+
+**Barang (`ItemController`)**
+* `GET /api/items` - Melihat daftar semua barang.
+* `POST /api/items` - Membuat laporan barang.
+* `GET /api/items/{id}` - Menampilkan detail dari satu barang spesifik.
+* `PATCH /api/items/{id}` - Memperbarui data barang.
+* `DELETE /api/items/{id}` - Menghapus data barang.
+* `PATCH /api/items/{id}/location` - Memperbarui lokasi terakhir dilihat dari barang tertentu.
+
+**Pengumuman (`AnnouncementController`)**
+* `GET /api/announcements` - Menampilkan semua pengumuman.
+* `POST /api/announcements` - Membuat Pengumuman baru.
+* `GET /api/announcements/pending` - Menampilkan pengumuman tipe pending.
+* `GET /api/announcements/{id}` - Membaca detail pengumuman.
+* `PATCH /api/announcements/{id}` - Memperbarui status / data pengumuman.
+* `DELETE /api/announcements/{id}` - Menghapus pengumuman.
+
+## 🧱 Struktur Direktori
+
+Direktori berprioritas tinggi sesuai dengan standar codebase API:
+
+```text
+app/
+ ┣ Exceptions/
+ ┃  ┣ Handler.php               # Handler untuk format response Error API
+ ┣ Http/
+ ┃  ┣ Controllers/
+ ┃     ┣ Api/                   # Controller Logika REST API yang tersentralisasi
+ ┃        ┣ AnnouncementController.php
+ ┃        ┣ AuthController.php
+ ┃        ┣ ItemController.php
+ ┃        ┣ UserController.php
+ ┣ Models/                      # Model Tabel Database
+ ┃  ┣ Announcement.php
+ ┃  ┣ Item.php
+ ┃  ┣ ItemLocation.php
+ ┃  ┣ Profile.php
+ ┃  ┣ User.php
+routes/
+ ┣ api.php                      # Kumpulan semua routing endpoint
+```
+
+<p align="center">Dibuat menggunakan Laravel</p>
