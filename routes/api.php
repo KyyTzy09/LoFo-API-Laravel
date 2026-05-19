@@ -7,10 +7,19 @@ use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Route Public (Bisa diakses siapa saja)
+// ==========================================
+// ROUTE PUBLIC (Bisa diakses siapa saja)
+// ==========================================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Route Private (Harus bawa Token)
+
+// Jalur bypass buat testing AI voice tanpa token login Sanctum
+Route::post('/announcement/voice', [AnnouncementController::class, 'storeVoice']);
+
+
+// ==========================================
+// ROUTE PRIVATE (Harus bawa Token)
+// ==========================================
 Route::middleware('auth:sanctum')->group(function () {
     // User Routes
     Route::get('/users/me', [AuthController::class, 'me']);
