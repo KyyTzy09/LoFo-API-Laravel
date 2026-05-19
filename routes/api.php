@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Jalur bypass buat testing AI voice tanpa token login Sanctum
-Route::post('/announcement/voice', [AnnouncementController::class, 'storeVoice']);
-
-
 // ==========================================
 // ROUTE PRIVATE (Harus bawa Token)
 // ==========================================
@@ -46,4 +42,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/announcements/{id}', [AnnouncementController::class, 'update']);
     Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
     Route::post('/announcements', [AnnouncementController::class, 'store']);
+    Route::post('/announcements/voice', [AnnouncementController::class, 'storeVoice']);
 });
