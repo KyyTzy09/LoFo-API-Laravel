@@ -160,31 +160,46 @@ class AnnouncementController extends Controller
      */
     public function storeVoice(Request $request)
     {
-       try {
+        // 1. Validasi teks suara yang dikirim dari Postman / Android
+        $request->validate([
+            'text' => 'required|string',
+        ]);
+
+        try {
+            // ID dummy yang kita sepakati untuk pengujian lokal tanpa auth token
+            $userIdLokal = $request->user()->userId; // Ganti dengan userId yang valid jika ada auth
+
+            // Cek ke tabel items, cari item milik userId 1 yang statusnya 'PENDING'
+            $pendingItems = Item::where('user_id', $userIdLokal)->where('status', 'TERSEDIA')->get();
+
+            // Atur logic connect_item & items secara dinamis sesuai titipan KyyTzy09
+            $connectItem = $pendingItems->isNotEmpty(); 
+            $itemsData = $pendingItems->toArray();
+
             // 2. Tembak langsung ke URL Python port 8001
             $aiUrl = 'http://127.0.0.1:8001/api/announcements/create-voice';
             
             // KUNCI LANGSUNG TOKENNYA DI SINI
             $aiToken = 'LoFo-AI-API';
 
-            // 3. Tembak (POST Request) ke AI Service Python port 8001
+            // 3. Tembak (POST Request) ke AI Service Python port 8001 dengan data dinamis
             $response = Http::withToken($aiToken)
                 ->post($aiUrl, [
-                    'text' => $request->text,
-                    'connect_item' => false,
-                    'items' => []
+                    'text'         => $request->text,
+                    'connect_item' => $connectItem,
+                    'items'        => $itemsData
                 ]);
 
             // 4. Jika Python & Gemini sukses mengekstrak data
             if ($response->successful()) {
                 $aiData = $response->json()['data'];
-
+                $itemId = $connectItem ? $aiData['itemId'] : null;
                 // 5. Otomatis simpan hasil olahan AI Gemini langsung ke database MySQL Laravel
                 $announcement = Announcement::create([
-                    'user_id'     => 1, // Di-hardcode sementara ke ID 1 agar bisa ditest tanpa login
-                    'item_id'     => null,
+                    'user_id'     => $userIdLokal, 
+                    'item_id'     => $itemId,
                     'title'       => $aiData['name'] ?? 'Kehilangan dari Suara',
-                    'description' => $aiData['description'] ?? $request->text,
+                    'description' => $aiData['description'] ?? "Deskripsi tidak tersedia",
                     'location'    => $aiData['location'] ?? 'Tidak diketahui',
                     // Jika AI mengembalikan lost_at gunakan itu, jika tidak pakai waktu sekarang
                     'lost_at'     => isset($aiData['lost_at']) ? Carbon::parse($aiData['lost_at']) : Carbon::now(),
