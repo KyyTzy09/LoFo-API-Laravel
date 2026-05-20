@@ -166,10 +166,26 @@ class AnnouncementController extends Controller
         ]);
 
         try {
-            // ID dummy yang kita sepakati untuk pengujian lokal tanpa auth token
-            $userIdLokal = $request->user()->userId; // Ganti dengan userId yang valid jika ada auth
+            // Ambil userId dari user yang sedang login
+            $userIdLokal = $request->user()->userId; 
 
-            // Cek ke tabel items, cari item milik userId 1 yang statusnya 'PENDING'
+            // ========================================================
+            // VALIDASI ANTI-DUPLIKAT: Cek jika user sudah punya announcement PENDING
+            // ========================================================
+            $existingPending = Announcement::where('user_id', $userIdLokal)
+                ->where('status', 'PENDING')
+                ->first();
+
+            if ($existingPending) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memproses suara. Terdapat pengumuman yang sedang berlangsung (PENDING) untuk akun Anda.',
+                    'data'    => $existingPending
+                ], 409); // 409 Conflict
+            }
+            // ========================================================
+
+            // Cek ke tabel items, cari item milik userId yang statusnya 'TERSEDIA'
             $pendingItems = Item::where('user_id', $userIdLokal)->where('status', 'TERSEDIA')->get();
 
             // Atur logic connect_item & items secara dinamis sesuai titipan KyyTzy09
@@ -193,7 +209,10 @@ class AnnouncementController extends Controller
             // 4. Jika Python & Gemini sukses mengekstrak data
             if ($response->successful()) {
                 $aiData = $response->json()['data'];
-                $itemId = $connectItem ? $aiData['itemId'] : null;
+                
+                // Ambil itemId dari response AI, atau ambil dari data item lokal jika connect_item true
+                $itemId = $connectItem ? ($aiData['itemId'] ?? ($itemsData[0]['itemId'] ?? null)) : null;
+
                 // 5. Otomatis simpan hasil olahan AI Gemini langsung ke database MySQL Laravel
                 $announcement = Announcement::create([
                     'user_id'     => $userIdLokal, 
@@ -205,6 +224,11 @@ class AnnouncementController extends Controller
                     'lost_at'     => isset($aiData['lost_at']) ? Carbon::parse($aiData['lost_at']) : Carbon::now(),
                     'status'      => 'PENDING'
                 ]);
+
+                // Tambahan: Kalau nyambung ke barang, status barang ubah jadi 'HILANG'
+                if ($itemId) {
+                    Item::where('itemId', $itemId)->update(['status' => 'HILANG']);
+                }
                 
                 return response()->json([
                     'success' => true,
