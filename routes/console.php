@@ -4,57 +4,14 @@ use App\Models\Announcement;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use Illuminate\Support\Facades\Http; // Jika menembak FCM manual via HTTP
+use Illuminate\Support\Facades\Http;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
-$sendFcmNotification = function (array $tokens, $itemTitle) {
-    $jsonPath = storage_path('app/firebase_credentials.json');
-    if (!file_exists($jsonPath)) return;
-
-    $credentials = json_decode(file_get_contents($jsonPath), true);
-    $accessToken = generateGoogleAccessToken($credentials);
-
-    foreach ($tokens as $token) {
-        Http::withToken($accessToken)
-            ->post("https://fcm.googleapis.com/v1/projects/{$credentials['project_id']}/messages:send", [
-                'message' => [
-                    'token' => $token,
-                    'notification' => [
-                        'title' => 'Reminder Pengumuman LoFo 📢',
-                        'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
-                    ],
-                    // TAMBAHKAN DATA PAYLOAD INI JUGA BRO:
-                    'data' => [
-                        'title' => 'Reminder Pengumuman LoFo 📢',
-                        'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
-                    ]
-                ]
-            ]);
-    }
-};
-
-Schedule::call(function () use ($sendFcmNotification) {
-    // Cari announcement PENDING yang sudah >= 3 hari
-    $expiredAnnouncements = Announcement::where('status', 'PENDING')
-        ->where('created_at', '<=', now()->subDays(3))
-        ->with('user.deviceTokens')
-        ->get();
-
-    foreach ($expiredAnnouncements as $announcement) {
-        $tokens = $announcement->user->deviceTokens->pluck('token')->toArray();
-
-        if (!empty($tokens)) {
-            $sendFcmNotification($tokens, $announcement->title);
-        }
-    }
-})->dailyAt('08:00');
-
-function generateGoogleAccessToken($credentials)
-{
+// 1. UBAH GENERATE TOKEN JADI ANONYMOUS FUNCTION (VARIABEL)
+$generateGoogleAccessToken = function ($credentials) {
     $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
     $now = time();
     $payload = json_encode([
@@ -79,5 +36,52 @@ function generateGoogleAccessToken($credentials)
         'assertion' => $jwt
     ]);
 
-    return $response->json()['access_token'];
-}
+    return $response->json()['access_token'] ?? null;
+};
+
+// 2. UBAH SEND NOTIFICATION JADI ANONYMOUS FUNCTION & OPER $generateGoogleAccessToken KE DALAMNYA
+$sendFcmNotification = function (array $tokens, $itemTitle) use ($generateGoogleAccessToken) {
+    $jsonPath = storage_path('app/firebase_credentials.json');
+    if (!file_exists($jsonPath)) return;
+
+    $credentials = json_decode(file_get_contents($jsonPath), true);
+    $accessToken = $generateGoogleAccessToken($credentials);
+
+    if (!$accessToken) return;
+
+    foreach ($tokens as $token) {
+        Http::withToken($accessToken)
+            ->post("https://fcm.googleapis.com/v1/projects/{$credentials['project_id']}/messages:send", [
+                'message' => [
+                    'token' => $token,
+                    'notification' => [
+                        'title' => 'Reminder Pengumuman LoFo 📢',
+                        'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
+                    ],
+                    'data' => [
+                        'title' => 'Reminder Pengumuman LoFo 📢',
+                        'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
+                    ]
+                ]
+            ]);
+    }
+};
+
+// 3. OPER $sendFcmNotification KE DALAM TASK SCHEDULE
+Schedule::call(function () use ($sendFcmNotification) {
+    // Cari announcement PENDING yang sudah >= 3 hari
+    $expiredAnnouncements = Announcement::where('status', 'PENDING')
+        ->where('created_at', '<=', now()->subDays(3))
+        ->with('user.deviceTokens')
+        ->get();
+
+    foreach ($expiredAnnouncements as $announcement) {
+        if (!$announcement->user) continue;
+
+        $tokens = $announcement->user->deviceTokens->pluck('token')->toArray();
+
+        if (!empty($tokens)) {
+            $sendFcmNotification($tokens, $announcement->title);
+        }
+    }
+})->dailyAt('08:00');
