@@ -50,6 +50,6 @@ class User extends Authenticatable
 
     public function deviceTokens()
     {
-        return $this->hasMany(DeviceToken::class);
+        return $this->hasMany(DeviceToken::class, 'user_id', 'userId');
     }
 }

@@ -4,10 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class DeviceToken extends Model
 {
     use HasFactory;
+
+        protected static function booted()
+    {
+        static::creating(function ($DeviceToken) {
+            if (!$DeviceToken->id) {
+                $DeviceToken->id = (string) Str::ulid();
+            }
+        });
+    }
 
     // Kolom yang boleh diisi mass-assignment
     protected $fillable = [

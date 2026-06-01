@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\UserController;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -16,7 +18,6 @@ Route::get('/ping', function () {
 });
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/device-tokens', [DeviceTokenController::class, 'store'])->middleware('auth:sanctum');
 
 // ==========================================
 // ROUTE PRIVATE (Harus bawa Token)
@@ -48,4 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
     Route::post('/announcements', [AnnouncementController::class, 'store']);
     Route::post('/announcements/voice', [AnnouncementController::class, 'storeVoice']);
+
+    // Route Device Token
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store'])->middleware('auth:sanctum');
 });

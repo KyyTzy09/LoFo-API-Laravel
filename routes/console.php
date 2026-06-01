@@ -27,13 +27,10 @@ Schedule::call(function () {
 })->dailyAt('08:00');
 
 function sendFcmNotification(array $tokens, $itemTitle) {
-    // Membaca file google-services json yang ditaruh di storage
     $jsonPath = storage_path('app/firebase_credentials.json');
     if (!file_exists($jsonPath)) return;
 
     $credentials = json_decode(file_get_contents($jsonPath), true);
-
-    // Create JWT Access Token untuk Firebase HTTP v1 API
     $accessToken = generateGoogleAccessToken($credentials);
 
     foreach ($tokens as $token) {
@@ -44,14 +41,19 @@ function sendFcmNotification(array $tokens, $itemTitle) {
                     'notification' => [
                         'title' => 'Reminder Pengumuman LoFo 📢',
                         'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
+                    ],
+                    // TAMBAHKAN DATA PAYLOAD INI JUGA BRO:
+                    'data' => [
+                        'title' => 'Reminder Pengumuman LoFo 📢',
+                        'body' => "Apakah barang '{$itemTitle}' sudah ketemu? Yuk update statusnya sekarang!"
                     ]
                 ]
             ]);
     }
 }
 
-// Helper untuk membuat Access Token OAuth2 dari Service Account Google
-function generateGoogleAccessToken($credentials) {
+function generateGoogleAccessToken($credentials)
+{
     $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
     $now = time();
     $payload = json_encode([
