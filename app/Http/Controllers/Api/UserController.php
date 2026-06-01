@@ -81,7 +81,8 @@ class UserController extends Controller
     public function Announcement(Request $request)
     {
         $user = $request->user();
-        $announcements = Announcement::where('user_id', $user->userId)->get();
+        $announcements = Announcement::where('user_id', $user->userId)->with(['user', 'user.profile', 'item'])->get();
+
         return response()->json([
             'status' => 200,
             'message' => 'User Announcement retrieved successfully',

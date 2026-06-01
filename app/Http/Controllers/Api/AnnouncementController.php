@@ -105,7 +105,7 @@ class AnnouncementController extends Controller
     public function showByUser(Request $request)
     {
         $user = $request->user();
-        $announcements = Announcement::where('user_id', $user->userId)->with(['user', 'user.profile'])->get();
+        $announcements = Announcement::where('user_id', $user->userId)->with(['user', 'user.profile', 'item'])->get();
 
         return response()->json([
             'message' => 'Semua pengumuman milik pengguna berhasil didapatkan',

@@ -1,0 +1,51 @@
+name: Deploy LoFo Backend Production
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          script: |
+            set -e
+
+            # 1. Masuk ke folder root tempat docker-compose berada
+            cd ~/lofo-project
+
+            # 2. Masuk ke subfolder laravel, lalu sync kodingan terbaru
+            cd laravel
+            echo "🔄 Syncing Laravel source code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 3. Kembali ke root untuk eksekusi Docker Compose
+            cd ~/lofo-project
+            echo "🐳 Rebuilding Laravel Container..."
+            sudo docker compose --env-file ./laravel/.env.production up -d --build --no-deps backend cron
+
+            # 4. Jalankan optimasi production & migration di dalam container Laravel
+            echo "⚡ Optimizing Laravel production state..."
+            sudo docker compose --env-file ./laravel/.env.production exec -T backend php artisan config:cache
+            sudo docker compose --env-file ./laravel/.env.production exec -T backend php artisan route:cache
+            sudo docker compose --env-file ./laravel/.env.production exec -T backend php artisan view:cache
+
+            echo "🗄️ Running database migrations..."
+            sudo docker compose --env-file ./laravel/.env.production exec -T backend php artisan migrate --force
+
+            # 5. Bersihkan cache image sampah sisa build
+            echo "🧹 Cleaning up unused Docker images..."
+            sudo docker image prune -f
+
+            echo "🚀 ✅ Backend successfully updated!"
