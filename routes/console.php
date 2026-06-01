@@ -10,23 +10,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::call(function () {
-    // Cari announcement PENDING yang sudah >= 3 hari
-    $expiredAnnouncements = Announcement::where('status', 'PENDING')
-        ->where('created_at', '<=', now()->subDays(3))
-        ->with('user.deviceTokens')
-        ->get();
 
-    foreach ($expiredAnnouncements as $announcement) {
-        $tokens = $announcement->user->deviceTokens->pluck('token')->toArray();
-
-        if (!empty($tokens)) {
-            sendFcmNotification($tokens, $announcement->title);
-        }
-    }
-})->dailyAt('08:00');
-
-function sendFcmNotification(array $tokens, $itemTitle) {
+$sendFcmNotification = function (array $tokens, $itemTitle) {
     $jsonPath = storage_path('app/firebase_credentials.json');
     if (!file_exists($jsonPath)) return;
 
@@ -50,7 +35,23 @@ function sendFcmNotification(array $tokens, $itemTitle) {
                 ]
             ]);
     }
-}
+};
+
+Schedule::call(function () use ($sendFcmNotification) {
+    // Cari announcement PENDING yang sudah >= 3 hari
+    $expiredAnnouncements = Announcement::where('status', 'PENDING')
+        ->where('created_at', '<=', now()->subDays(3))
+        ->with('user.deviceTokens')
+        ->get();
+
+    foreach ($expiredAnnouncements as $announcement) {
+        $tokens = $announcement->user->deviceTokens->pluck('token')->toArray();
+
+        if (!empty($tokens)) {
+            $sendFcmNotification($tokens, $announcement->title);
+        }
+    }
+})->dailyAt('08:00');
 
 function generateGoogleAccessToken($credentials)
 {
