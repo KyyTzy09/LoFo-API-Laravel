@@ -47,4 +47,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Announcement::class, 'user_id', 'userId');
     }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
 }
