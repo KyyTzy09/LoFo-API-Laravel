@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ Route::get('/ping', function () {
 });
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/device-tokens', [DeviceTokenController::class, 'store'])->middleware('auth:sanctum');
 
 // ==========================================
 // ROUTE PRIVATE (Harus bawa Token)
