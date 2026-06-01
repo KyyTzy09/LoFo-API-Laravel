@@ -12,9 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('device_tokens', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            // Jika tabel device_tokens ini juga mau pakai UUID sebagai Primary Key-nya:
+            $table->uuid('id')->primary();
+            $table->string('user_id');
             $table->string('token')->unique();
+
+            $table->foreign('user_id')
+                ->references('userId')
+                ->on('users')
+                ->onDelete('cascade');
+
             $table->timestamps();
         });
     }
