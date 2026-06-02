@@ -8,7 +8,7 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Http; // <-- Penting: Untuk nembak API Python AI
+use Illuminate\Support\Facades\Http;
 use Exception;
 
 class AnnouncementController extends Controller
@@ -204,27 +204,11 @@ class AnnouncementController extends Controller
             // Ambil userId dari user yang sedang login
             $userIdLokal = $request->user()->userId;
 
-            // ========================================================
-            // VALIDASI ANTI-DUPLIKAT: Cek jika user sudah punya announcement PENDING
-            // ========================================================
-            $existingPending = Announcement::where('user_id', $userIdLokal)
-                ->where('status', 'PENDING')
-                ->first();
-
-            if ($existingPending) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal memproses suara. Terdapat pengumuman yang sedang berlangsung (PENDING) untuk akun Anda.',
-                    'data'    => $existingPending
-                ], 409); // 409 Conflict
-            }
-            // ========================================================
-
             // Cek ke tabel items, cari item milik userId yang statusnya 'TERSEDIA'
             $pendingItems = Item::where('user_id', $userIdLokal)->where('status', 'TERSEDIA')->get();
 
             // Atur logic connect_item & items secara dinamis sesuai titipan KyyTzy09
-            $connectItem = $pendingItems->isNotEmpty();
+            $connectItem = $request->input('connect_item', $pendingItems->isNotEmpty());
             $itemsData = $pendingItems->toArray();
 
             // 2. Tembak langsung ke URL Python port 8001
@@ -248,6 +232,21 @@ class AnnouncementController extends Controller
                 // Ambil itemId dari response AI, atau ambil dari data item lokal jika connect_item true
                 $itemId = $connectItem ? ($aiData['itemId'] ?? ($itemsData[0]['itemId'] ?? null)) : null;
 
+                if ($itemId) {
+                    // Cek apakah sudah ada pengumuman PENDING untuk itemId ini
+                    $existingPending = Announcement::where('item_id', $itemId)
+                        ->where('status', 'PENDING')
+                        ->first();
+
+                    if ($existingPending) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Gagal memproses suara. Terdapat pengumuman yang sedang berlangsung (PENDING) untuk akun Anda.',
+                            'data'    => $existingPending
+                        ], 409); // 409 Conflict
+                    }
+                }
+
                 // 5. Otomatis simpan hasil olahan AI Gemini langsung ke database MySQL Laravel
                 $announcement = Announcement::create([
                     'user_id'     => $userIdLokal,
@@ -256,7 +255,7 @@ class AnnouncementController extends Controller
                     'description' => $aiData['description'] ?? "Deskripsi tidak tersedia",
                     'location'    => $aiData['location'] ?? 'Tidak diketahui',
                     // Jika AI mengembalikan lost_at gunakan itu, jika tidak pakai waktu sekarang
-                    'lost_at'     => isset($aiData['lost_at']) ? Carbon::parse($aiData['lost_at']) : Carbon::now(),
+                    'lost_at' => isset($aiData['lost_at']) ? Carbon::parse($aiData['lost_at']) : Carbon::now('UTC'),
                     'status'      => 'PENDING'
                 ]);
 
