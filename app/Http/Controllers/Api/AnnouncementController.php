@@ -35,12 +35,12 @@ class AnnouncementController extends Controller
         $validator = Validator::make($request->all(), [
             'item_id' => 'nullable|string',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'location' => 'required|string|max:255',
-            'lost_at' => 'required|date_format:d/m/Y H:i',
+            'lost_at' => 'required|date',
         ]);
 
-        $lost_at = Carbon::createFromFormat('d/m/Y H:i', $request->lost_at);
+
 
         // Default status is 'PENDING'
         if ($validator->fails()) {
@@ -51,6 +51,9 @@ class AnnouncementController extends Controller
         }
 
         $validated = $validator->validated();
+        $lost_at = Carbon::parse($validated['lost_at']);
+
+
 
         $validated['user_id'] = $user->userId;
         $validated['lost_at'] = $lost_at;
@@ -113,11 +116,43 @@ class AnnouncementController extends Controller
         ]);
     }
 
+    public function update(Request $request, $id)
+    {
+        $announcement = Announcement::findOrFail($id);
+        if (!$announcement) {
+            return response()->json(['message' => 'Pengumuman tidak ditemukan'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'nullable|string',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'location' => 'required|string|max:255',
+            'lost_at' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validated = $validator->validated();
+        $validated['lost_at'] = Carbon::parse($validated['lost_at']);
+
+        $announcement->update($validated);
+        return response()->json([
+            'message' => 'Pengumuman berhasil diperbarui',
+            'data' => $announcement
+        ]);
+    }
+
     /**
      * Update the specified resource in storage.
      * Only updates the status (e.g. mark as CLOSED).
      */
-    public function update(Request $request, $id)
+    public function updateStatus(Request $request, $id)
     {
         $announcement = Announcement::findOrFail($id);
 
@@ -196,7 +231,7 @@ class AnnouncementController extends Controller
             $aiUrl = env('AI_API_BASE_URL', 'http://localhost:8080/api') . '/create-voice';
 
             // KUNCI LANGSUNG TOKENNYA DI SINI
-            $aiToken =env('AI_TOKEN', 'LoFo-AI-API'); // Ambil dari .env, default "LoFo-AI-API" jika tidak ada
+            $aiToken = env('AI_TOKEN', 'LoFo-AI-API'); // Ambil dari .env, default "LoFo-AI-API" jika tidak ada
 
             // 3. Tembak (POST Request) ke AI Service Python port 8001 dengan data dinamis
             $response = Http::withToken($aiToken)
@@ -243,7 +278,6 @@ class AnnouncementController extends Controller
                 'message' => 'AI Service Python gagal memproses data.',
                 'error'   => $response->body()
             ], $response->status());
-
         } catch (Exception $e) {
             // Jika ada error jaringan atau server down
             return response()->json([

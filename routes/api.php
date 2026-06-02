@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/announcements/pending', [AnnouncementController::class, 'showPending']);
     Route::get('/announcements/{id}', [AnnouncementController::class, 'show']);
     Route::patch('/announcements/{id}', [AnnouncementController::class, 'update']);
+    Route::patch('/announcements/{id}/status', [AnnouncementController::class, 'updateStatus']);
     Route::delete('/announcements/{id}', [AnnouncementController::class, 'destroy']);
     Route::post('/announcements', [AnnouncementController::class, 'store']);
     Route::post('/announcements/voice', [AnnouncementController::class, 'storeVoice']);

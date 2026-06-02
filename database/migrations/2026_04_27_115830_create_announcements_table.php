@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('item_id')->nullable();
 
             $table->string('title');
-            $table->text('description');
+            $table->text('description')->nullable();
 
             $table->string('location');
             $table->timestamp('lost_at');
