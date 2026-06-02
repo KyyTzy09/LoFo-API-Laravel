@@ -212,7 +212,7 @@ class AnnouncementController extends Controller
             $itemsData = $pendingItems->toArray();
 
             // 2. Tembak langsung ke URL Python port 8001
-            $aiUrl = env('AI_API_BASE_URL', 'http://localhost:8080/api') . '/create-voice';
+            $aiUrl = env('AI_API_BASE_URL', 'http://localhost:8080/api') . '/announcements/create-voice';
 
             // KUNCI LANGSUNG TOKENNYA DI SINI
             $aiToken = env('AI_TOKEN', 'LoFo-AI-API'); // Ambil dari .env, default "LoFo-AI-API" jika tidak ada
