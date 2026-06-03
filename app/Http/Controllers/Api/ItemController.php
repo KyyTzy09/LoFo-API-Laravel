@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateAndUploadQrCode;
 use App\Models\Item;
 use App\Models\ItemLocation;
 use Illuminate\Http\Request;
@@ -164,7 +165,6 @@ class ItemController extends Controller
         $apiKey = env("CLOUDINARY_API_KEY");
         $apiSecret = env("CLOUDINARY_API_SECRET");
         $user = $request->user();
-        // Validasi input
 
         $validator = Validator::make($request->all(), [
             "item_name" => "required|string|max:255",
@@ -173,98 +173,54 @@ class ItemController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(
-                [
-                    "success" => false,
-                    "message" => "Validation Error",
-                    "errors" => $validator->errors(),
-                ],
-                422,
-            );
+            return response()->json([
+                "success" => false,
+                "message" => "Validation Error",
+                "errors" => $validator->errors(),
+            ], 422);
         }
 
         $validated = $validator->validated();
         $validated["user_id"] = $user->userId;
+        $validated["status"] = "TERSEDIA";
 
         try {
-            // Handle upload gambar jika ada
+            // Handle upload gambar barang fisik (Satu-satunya beban sinkronus)
             if ($request->hasFile("image")) {
                 $image = $request->file("image");
                 $response = Http::asMultipart()
                     ->withBasicAuth($apiKey, $apiSecret)
-                    ->post(
-                        "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
-                        [
-                            "file" => fopen($image->getRealPath(), "r"),
-                            "folder" => "items",
-                        ],
-                    );
+                    ->post("https://api.cloudinary.com/v1_1/{$cloudName}/image/upload", [
+                        "file" => fopen($image->getRealPath(), "r"),
+                        "folder" => "items",
+                    ]);
 
                 if ($response->successful()) {
                     $validated["image"] = $response->json("secure_url");
                 } else {
-                    throw new \Exception(
-                        "Gagal upload gambar ke Cloudinary: " .
-                            $response->body(),
-                    );
+                    throw new \Exception("Gagal upload gambar ke Cloudinary: " . $response->body());
                 }
             }
 
-            // Buat item baru
+            // 1. Simpan item ke database MySQL terlebih dahulu
             $item = Item::create($validated);
 
-            // Generate QR Code dengan URL item
-            $result = Builder::create()
-                ->writer(new PngWriter())
-                ->data($item->itemId)
-                ->build();
+            // 2. JURUS KUNCI OPTIMASI: Lempar tugas QR Code ke antrean background job!
+            // Laravel akan langsung melanjutkan baris kode berikutnya tanpa menunggu QR selesai diupload
+            GenerateAndUploadQrCode::dispatch($item);
 
-            // Simpan QR Code ke Cloudinary
-
-
-            $tempQrPath = sys_get_temp_dir() . "/" . uniqid() . "_qr.png";
-            file_put_contents($tempQrPath, $result->getString());
-
-            $qrResponse = Http::asMultipart()
-                ->withBasicAuth($apiKey, $apiSecret)
-                ->post(
-                    "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload",
-                    [
-                        "file" => fopen($tempQrPath, "r"),
-                        "folder" => "qrcodes",
-                    ],
-                );
-
-            if ($qrResponse->successful()) {
-                $item->qr_url = $qrResponse->json("secure_url");
-            } else {
-                throw new \Exception(
-                    "Gagal upload QR Code ke Cloudinary: " .
-                        $qrResponse->body(),
-                );
-            }
-            $item->save();
-
-            // Hapus file temporary
-            @unlink($tempQrPath);
-
-            return response()->json(
-                [
-                    "success" => true,
-                    "message" => "Item berhasil ditambahkan",
-                    "data" => $item,
-                ],
-                201,
-            );
+            // 3. Langsung kembalikan response sukses ke Android (Ngebut parah!)
+            return response()->json([
+                "success" => true,
+                "message" => "Item berhasil ditambahkan! QR Code sedang diproses di background.",
+                "data" => $item,
+            ], 201);
         } catch (\Exception $e) {
-            return response()->json(
-                [
-                    "success" => false,
-                    "message" => "Gagal menambah item",
-                    "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
-                ],
-                500,
-            );
+            return response()->json([
+                "success" => false,
+                "message" => "Gagal menambah item",
+                "error" => app()->environment('local') ? $e->getMessage() : "Internal Server Error",
+            ], 500);
         }
     }
 
