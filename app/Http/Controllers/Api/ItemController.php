@@ -208,7 +208,8 @@ class ItemController extends Controller
             // 2. JURUS KUNCI OPTIMASI: Lempar tugas QR Code ke antrean background job!
             // Laravel akan langsung melanjutkan baris kode berikutnya tanpa menunggu QR selesai diupload
             GenerateAndUploadQrCode::dispatch($item);
-
+            $item->qr_url = $item->itemId;
+            
             // 3. Langsung kembalikan response sukses ke Android (Ngebut parah!)
             return response()->json([
                 "success" => true,
